@@ -5,6 +5,25 @@ resource "aws_vpc" "myvpc" {
 resource "aws_subnet" "subnet1" {
   vpc_id = aws_vpc.myvpc.id
   cidr_block = var.subnet_range
+  map_public_ip_on_launch = true
+}
+
+resource "aws_internet_gateway" "igw-proj" {
+  vpc_id = aws_vpc.myvpc.id
+}
+
+resource "aws_route_table" "RT-proj" {
+  vpc_id = aws_vpc.myvpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw-proj.id
+  }
+}
+
+resource "aws_route_table_association" "RTS" {
+  route_table_id = aws_route_table.RT-proj.id
+  subnet_id = aws_subnet.subnet1.id
 }
 
 resource "aws_security_group" "control_plane" {
@@ -117,4 +136,16 @@ resource "aws_security_group" "worker_node" {
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+output "subnet_id" {
+  value = aws_subnet.subnet1.id
+}
+
+output "control_plane_sg" {
+  value = aws_security_group.control_plane.id
+}
+
+output "worker_node_sg" {
+  value = aws_security_group.worker_node.id
 }
